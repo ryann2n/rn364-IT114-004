@@ -22,7 +22,7 @@ public class Problem3 {
         //TODO convert each value to positive
         //set the result to the proper index of the output array
         //hint: don't forget to handle the data types properly, the result datatype should be the same as the original datatype
-        for(int i = 0; i < arr.length; i++)
+        for(int i = 0; i < arr.length; i++) //rn364 2-6-24
         {if(arr[i] instanceof Integer){output[i] = Math.abs((Integer) arr[i]);} 
         else if(arr[i] instanceof Double){output[i] = Math.abs((Double) arr[i]);} 
         else if (arr[i] instanceof String){try{output[i] = Math.abs(Double.parseDouble((String)arr[i]));}

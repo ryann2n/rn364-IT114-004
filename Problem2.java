@@ -25,6 +25,7 @@ public class Problem2 {
        }
         //set the double to a string variable
         //TODO ensure rounding is to two decimal places (i.e., 0.10, 0.01, 1.00)
+        //rn364 2-6-24
         DecimalFormat form = new
         DecimalFormat("$.00");
         totalOutput = form.format(total);
