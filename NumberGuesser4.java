@@ -125,10 +125,34 @@ public class NumberGuesser4 {
             return;
         }
         System.out.println("You guessed " + guess);
-        if (guess == number) {
+        if (guess == number)
+        {
             win();
             pickNewRandom = true;
-        } else {
+        } 
+        //rn364 2-12-24 
+        int difference = number - guess;
+        if(difference <= 2){
+            System.out.println("You're Hot");
+        }
+        else if(difference <= 5){
+            System.out.println("You're warm");
+        }
+        else{
+            System.out.println("You're cold");
+        }
+        //rn364 2-12-24
+        if (guess > number){
+            System.out.println("Guess lower ");
+        }
+        //rn364 - 2-12-24
+        else if(guess < number){
+            System.out.println("Guess Higher");
+        }
+        //rn364 2-12-24
+        
+        else 
+        {
             System.out.println("That's wrong");
             strikes++;
             if (strikes >= maxStrikes) {
