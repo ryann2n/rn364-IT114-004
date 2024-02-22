@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 public class Server {
     int port = 3001;
@@ -82,8 +84,43 @@ public class Server {
             }
             return true;
         }
-        return false;
-    }
+        //rn364-2-21-24
+        if(message.equalsIgnoreCase("toss")) {
+            double toss = Math.random();
+            if(toss < 0.5){
+                System.out.println("Heads");
+                broadcast("Flipped a coin and got heads", clientId);
+            }
+            else
+            {
+                System.out.println("Tails");
+                broadcast("Flipped a coin and got tails", clientId);
+            }
+        }
+        //rn364-2-21-24
+        else if (message.startsWith("shuffle")) {
+            System.out.println("Shuffle: " + message);
+            
+            // Split the message into individual words
+            String[] shuffle = message.split("\\s+");
+            
+            // Shuffle the order of words using Fisher-Yates algorithm
+            Random random = new Random();
+            for (int i = shuffle.length - 1; i > 0; i--) {
+                int j = random.nextInt(i + 1);
+                // Swap shuffle[i] and shuffle[j]
+                String temp = shuffle[i];
+                shuffle[i] = shuffle[j];
+                shuffle[j] = temp;
+            }
+            
+            // Join the shuffled words back into a single string
+            message = String.join(" ", shuffle);
+            
+            System.out.println(message);
+            broadcast("Shuffled message: " + message, clientId);}
+            return true;
+        }
     public static void main(String[] args) {
         System.out.println("Starting Server");
         Server server = new Server();
