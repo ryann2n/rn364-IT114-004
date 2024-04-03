@@ -16,9 +16,9 @@ public class Room implements AutoCloseable{
 	private final static String DISCONNECT = "disconnect";
 	private final static String LOGOUT = "logout";
 	private final static String LOGOFF = "logoff";
-	private final static String ROCK = "rock"; //r for rock
-	private final static String PAPER = "paper"; //p for paper
-	private final static String SCISSORS = "Scissors"; //s for scissors
+	private final static String ROLL = "roll"; //roll random
+	private final static String FLIP = "flip"; //coin flip 2 sides
+	private final static String DISPLAY = "display"; //display of color change
 
 
 	public Room(String name) {
