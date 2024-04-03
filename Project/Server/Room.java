@@ -1,12 +1,8 @@
 package Project.Server;
 
-
-package Module5.Part5;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 
 public class Room implements AutoCloseable{
 	protected static Server server;// used to refer to accessible server functions
@@ -20,9 +16,10 @@ public class Room implements AutoCloseable{
 	private final static String DISCONNECT = "disconnect";
 	private final static String LOGOUT = "logout";
 	private final static String LOGOFF = "logoff";
-	private final static String ROLL = "roll"; //person can input roll command
-	private final static String FLIP = "flip"; //person can input flip command
-	private final static String DISPLAY = "display"; //person can input display command
+	private final static String ROLL = "roll"; //roll random
+	private final static String FLIP = "flip"; //coin flip 2 sides
+	private final static String DISPLAY = "display"; //display of color change
+
 
 	public Room(String name) {
 		this.name = name;
@@ -32,6 +29,7 @@ public class Room implements AutoCloseable{
 	private void info(String message) {
 		System.out.println(String.format("Room[%s]: %s", name, message));
 	}
+
 	public String getName() {
 		return name;
 	}
@@ -95,7 +93,6 @@ public class Room implements AutoCloseable{
 	 * @param message The original message being sent
 	 * @param client  The sender of the message (since they'll be the ones
 	 *                triggering the actions)
-	 * @return 
 	 */
 	private boolean processCommands(String message, ServerThread client) {
 		boolean wasCommand = false;
@@ -107,7 +104,6 @@ public class Room implements AutoCloseable{
 				String command = comm2[0];
 				String roomName;
 				wasCommand = true;
-				Random random = new Random();
 				switch (command) {
 					case CREATE_ROOM:
 						roomName = comm2[1];
@@ -117,40 +113,44 @@ public class Room implements AutoCloseable{
 						roomName = comm2[1];
 						Room.joinRoom(roomName, client);
 						break;
-					
-					case ROLL: //roll command             UCID:awh9 Date:12/10/2022
-						// Random random = new Random();
-						int x = 3;
+
+					case ROLL: //this is to roll
+						int x = 3; //you get 3 rolls
 						int result = random.nextInt(x);
+						String rollMessage = client.getClientName() + " rolled it and the result is: " + result; 
 						
-						String rollMessage = gettingClientName(client) + " chose a roll and the result of the roll is: " + result;
-						
-						sendMessage(null, rollMessage); //send message to all clients
+						sendMessage(null, rollMessage); //this sends messages to all the client
 						break;
 
-					case FLIP: //flip command
-						// Random random = new Random();
-						int resultFlip = random.nextInt(2);
-						String messageFlip = "";
-						if (resultFlip == 0) {
-						messageFlip = gettingClientName(client) + " chose a coin flip and the result of the coin flip is heads.";
-						} else {
-						messageFlip = gettingClientName(client) + " chose a coin flip and the result of the coin flip is tails.";
-						}
-						sendMessage(null, messageFlip); //send message to all clients
-						break;
-					
-					case DISPLAY: //display command, changes font and color of text
-						String first_text = processTextDisplayChange(comm2[1]);
-						String second_text = gettingClientName(client) + " chose to change the display of the text and got" + first_text;
+
+					case FLIP:// this is flip
+					//make a random
+					int resultFlip = random.nextInt(2);
+					String messageFlip = "";
+					if (resultFlip == 0) 
+					{
+						messageFlip = gettingClientName(client) + "coin flip it and the result is heads";
+					}
+					else 
+					{
+						messageFlip = gettingClientName(client) + "coin flip it and the result is tails";
+					}
+					sendMessage(null, messageFlip); //also sends messages to all clients
+					break;
+
+					case DISPLAY: //display the commands
+						String frist_text = processTextDisplayChange(comm2[1]);
+						String second_text = gettingClientName(client) + "change display of a text and you got" + first_text;
 						sendMessage(null, second_text);
-						break;
-							
+							break;
+
 					case DISCONNECT:
 					case LOGOUT:
 					case LOGOFF:
 						Room.disconnectClient(client, this);
 						break;
+					
+
 					default:
 						wasCommand = false;
 						break;
@@ -163,11 +163,11 @@ public class Room implements AutoCloseable{
 		return wasCommand;
 	}
 
-
 	// Command helper methods
 	protected static void createRoom(String roomName, ServerThread client) {
 		if (server.createNewRoom(roomName)) {
-			server.joinRoom(roomName, client);
+			//server.joinRoom(roomName, client);
+			Room.joinRoom(roomName, client);
 		} else {
 			client.sendMessage("Server", String.format("Room %s already exists", roomName));
 		}
@@ -214,55 +214,6 @@ public class Room implements AutoCloseable{
 			}
 		}
 	}
-		
-		protected String gettingClientName(ServerThread sender) { // function loops over all clients/server threads and returns the name of the client that sent the message
-		if (!isRunning) {
-			return null;
-		}
-		//Trying to get CLient name
-		Iterator<ServerThread> iter2 = clients.iterator();
-		while (iter2.hasNext()) {
-			ServerThread client = iter2.next();
-		}
-		return sender.getClientName();
-		}
-
-		public String processTextDisplayChange(String message) { //UCID:awh9 Date:12/10/2022
-			String text = message;
-			if (text.contains("**")) { //bolds text = **Bold**
-			text = text.replace("**", "<b>");
-			text = text.replace("**", "</b>");
-			}
-			if (text.contains("*")) { //italics text = *Italics*
-			text = text.replace("*", "<i>");
-			text = text.replace("*", "</i>");
-			}
-			if (text.contains("_")) { //underlines text = _Underline_
-			text = text.replace("_", "<u>");
-			text = text.replace("_", "</u>");
-			}
-			if (text.contains("##")) { //changes text color to red = ##Red##
-			text = text.replace("##", "<font color=\"#FF0000\">");
-			text = text.replace("##", "</font>");
-			}
-			if (text.contains("#")) { //changes text color to green = #Green#
-			text = text.replace("#", "<font color=\"#00FF00\">");
-			text = text.replace("#", "</font>");
-			}
-			if (text.contains("$$")) { //changes text color to blue = $$Blue$$
-			text = text.replace("$$", "<font color=\"#0000FF\">");
-			text = text.replace("$$", "</font>");
-			}
-			return (text);
-			}
-			/* 
-			Colors:
-			Red: #FF0000
-			Green: #00FF00
-			Blue: #0000FF
-			Yellow: #FFFF00
-			*/
-
 	protected synchronized void sendConnectionStatus(ServerThread sender, boolean isConnected){
 		Iterator<ServerThread> iter = clients.iterator();
 		while (iter.hasNext()) {
@@ -275,14 +226,12 @@ public class Room implements AutoCloseable{
 	}
 	private void handleDisconnect(Iterator<ServerThread> iter, ServerThread client){
 		iter.remove();
-		info("Removed client " + client.getId());
+		info("Removed client " + client.getClientName());
 		checkClients();
-		sendMessage(null, client.getId() + " disconnected");
+		sendMessage(null, client.getClientName() + " disconnected");
 	}
 	public void close() {
 		server.removeRoom(this);
-		//NOTE: This will break all rooms
-		//be sure to remove/comment out server = null;
 		server = null;
 		isRunning = false;
 		clients = null;
