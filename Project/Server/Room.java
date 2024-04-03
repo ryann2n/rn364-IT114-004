@@ -116,8 +116,8 @@ public class Room implements AutoCloseable{
 
 					case ROLL: //this is to roll
 						int x = 3; //you get 3 rolls
-						int result = rando.nextInt(x);
-						String rollMessage = gettingClientName(client) + "roll it and the result is: " + result; 
+						int result = random.nextInt(x);
+						String rollMessage = client.getClientName() + " rolled it and the result is: " + result; 
 						
 						sendMessage(null, rollMessage); //this sends messages to all the client
 						break;
@@ -125,11 +125,11 @@ public class Room implements AutoCloseable{
 
 					case FLIP:// this is flip
 					//make a random
-					int resultFlip = rndom.nextInt(2);
+					int resultFlip = random.nextInt(2);
 					String messageFlip = "";
 					if (resultFlip == 0) 
 					{
-						messageFlip = gettingClientName(client) + "coin flip it and the result is heads";
+						messageFlip = getClientName(client) + "coin flip it and the result is heads";
 					}
 					else 
 					{
