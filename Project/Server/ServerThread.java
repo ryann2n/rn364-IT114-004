@@ -139,6 +139,7 @@ public class ServerThread extends Thread {
                     Room.joinRoom("lobby", this);
                 }
                 break;
+                /* 
                 case ROLL:
                 case FLIP:
                 case DISPLAY:
@@ -148,8 +149,10 @@ public class ServerThread extends Thread {
                     else {
                         Room.joinRoom("lobby", this);
                     } //rn364
+                    */
             default:
                 break;
+                
 
         }
 
