@@ -1,5 +1,5 @@
 package Project.Common;
 
 public enum PayloadType {
-    CONNECT, DISCONNECT, MESSAGE
+    CONNECT, DISCONNECT, MESSAGE, ROLL, FLIP, DISPLAY
 }

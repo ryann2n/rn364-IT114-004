@@ -19,7 +19,7 @@ public class Room implements AutoCloseable{
 	private final static String ROCK = "rock"; //r for rock
 	private final static String PAPER = "paper"; //p for paper
 	private final static String SCISSORS = "Scissors"; //s for scissors
-	
+
 
 	public Room(String name) {
 		this.name = name;
@@ -113,11 +113,44 @@ public class Room implements AutoCloseable{
 						roomName = comm2[1];
 						Room.joinRoom(roomName, client);
 						break;
+
+					case ROLL: //this is to roll
+						int x = 3; //you get 3 rolls
+						int result = rando.nextInt(x);
+						String rollMessage = gettingClientName(client) + "roll it and the result is: " + result; 
+						
+						sendMessage(null, rollMessage); //this sends messages to all the client
+						break;
+
+
+					case FLIP:// this is flip
+					//make a random
+					int resultFlip = rndom.nextInt(2);
+					String messageFlip = "";
+					if (resultFlip == 0) 
+					{
+						messageFlip = gettingClientName(client) + "coin flip it and the result is heads";
+					}
+					else 
+					{
+						messageFlip = gettingClientName(client) + "coin flip it and the result is tails";
+					}
+					sendMessage(null, messageFlip); //also sends messages to all clients
+					break;
+
+					case DISPLAY: //display the commands
+						String frist_text = processTextDisplayChange(comm2[1]);
+						String second_text = gettingClientName(client) + "change display of a text and you got" + first_text;
+						sendMessage(null, second_text);
+							break;
+
 					case DISCONNECT:
 					case LOGOUT:
 					case LOGOFF:
 						Room.disconnectClient(client, this);
 						break;
+					
+
 					default:
 						wasCommand = false;
 						break;
