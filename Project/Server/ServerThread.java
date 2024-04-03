@@ -139,6 +139,15 @@ public class ServerThread extends Thread {
                     Room.joinRoom("lobby", this);
                 }
                 break;
+                case ROCK:
+                case PAPER:
+                case SCISSORS:
+                    if (currentRoom != null) {
+                        currentRoom.sendMessage(this, p.getMessage());
+                    } 
+                    else {
+                        Room.joinRoom("lobby", this);
+                    }
             default:
                 break;
 

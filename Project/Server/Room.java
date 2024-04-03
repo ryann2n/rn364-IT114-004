@@ -16,6 +16,10 @@ public class Room implements AutoCloseable{
 	private final static String DISCONNECT = "disconnect";
 	private final static String LOGOUT = "logout";
 	private final static String LOGOFF = "logoff";
+	private final static String ROCK = "rock"; //r for rock
+	private final static String PAPER = "paper"; //p for paper
+	private final static String SCISSORS = "Scissors"; //s for scissors
+	
 
 	public Room(String name) {
 		this.name = name;
