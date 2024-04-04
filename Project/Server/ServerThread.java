@@ -19,6 +19,14 @@ public class ServerThread extends Thread {
     // private Server server;// ref to our server so we can call methods on it
     // more easily
     private Room currentRoom;
+    private String choice = "";
+
+    public String getChoice(){
+        return choice;
+    }
+    public void setChoice(String choice){
+        this.choice = choice;
+    }
 
     private void info(String message) {
         System.out.println(String.format("Thread[%s]: %s", getId(), message));
@@ -63,10 +71,10 @@ public class ServerThread extends Thread {
     }
 
     // send methods
-    public boolean sendMessage(String from, String message) {
+    public boolean sendMessage(String client, String message) {
         Payload p = new Payload();
         p.setPayloadType(PayloadType.MESSAGE);
-        p.setClientName(from);
+        p.setClientName(client);
         p.setMessage(message);
         return send(p);
     }
@@ -139,16 +147,30 @@ public class ServerThread extends Thread {
                     Room.joinRoom("lobby", this);
                 }
                 break;
-                /* */
-                case ROLL:
-                case FLIP:
-                case DISPLAY:
-                    if (currentRoom != null) {
-                        currentRoom.sendMessage(this, p.getMessage());
-                    } 
-                    else {
-                        Room.joinRoom("lobby", this);
-                    } //rn364
+                /* 
+            case ROLL:
+                int x = 3;
+                int result = random.nextInt(x);
+                String rollMessage = "The result of the roll is: " + result;
+                String Name_R =getClientName();
+                rollMessage = Name_R + "did chose a roll and " + rollMessage;
+                currentRoom.sendMessage(this , rollMessage);
+                break;
+
+            case FLIP:
+                // Random random = new Random();
+                int resultFlip = random.nextInt(2);
+                String messageFlip = "";
+                if (resultFlip == 0) {
+                messageFlip = "The result of the coin flip is heads.";
+                } else {
+                messageFlip = "The result of the coin flip is tails.";
+                }
+                String Name_F =getClientName();
+                messageFlip = Name_F + "did chose a flip and " + messageFlip;
+                currentRoom.sendMessage(this, messageFlip);
+                break;
+                */
             default:
                 break;
 

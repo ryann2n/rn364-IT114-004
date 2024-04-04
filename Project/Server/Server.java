@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.List;
 
 
-
 public class Server {
     int port = 3001;
     // connected clients
@@ -115,7 +114,7 @@ public class Server {
 
     protected synchronized void broadcast(String message) {
         if (processCommand(message)) {
-
+            
             return;
         }
         // loop over rooms and send out the message

@@ -231,6 +231,8 @@ public class Client {
                         p.getClientName(),
                         p.getMessage()));
                 break;
+
+                
             default:
                 break;
 

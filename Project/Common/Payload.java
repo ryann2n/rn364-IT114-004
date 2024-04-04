@@ -24,7 +24,7 @@ public class Payload implements Serializable {
         return clientName;
     }
     public void setClientName(String clientName) {
-        this.clientName = clientName;
+        this.clientName = client2;
     }
 
     /**
