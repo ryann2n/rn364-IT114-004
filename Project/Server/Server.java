@@ -1,4 +1,4 @@
-package Module5.Part5;
+package Project.Server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -6,6 +6,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+
 
 public class Server {
     int port = 3001;
@@ -113,7 +115,7 @@ public class Server {
 
     protected synchronized void broadcast(String message) {
         if (processCommand(message)) {
-            
+
             return;
         }
         // loop over rooms and send out the message

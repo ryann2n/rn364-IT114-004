@@ -1,9 +1,12 @@
-package Module5.Part5;
+package Project.Server;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+
+import Project.Common.Payload;
+import Project.Common.PayloadType;
 
 /**
  * A server-side representation of a single client
@@ -16,15 +19,6 @@ public class ServerThread extends Thread {
     // private Server server;// ref to our server so we can call methods on it
     // more easily
     private Room currentRoom;
-    private String choice = "";
-
-    public String getChoice() {
-        return choice;
-    }
-
-    public void setChoice(String choice) {
-        this.choice = choice;
-    }
 
     private void info(String message) {
         System.out.println(String.format("Thread[%s]: %s", getId(), message));
@@ -69,16 +63,16 @@ public class ServerThread extends Thread {
     }
 
     // send methods
-    public boolean sendMessage(String client, String message) {
+    public boolean sendMessage(String from, String message) {
         Payload p = new Payload();
         p.setPayloadType(PayloadType.MESSAGE);
-        p.setClientName(client);
+        p.setClientName(from);
         p.setMessage(message);
         return send(p);
     }
     public boolean sendConnectionStatus(String who, boolean isConnected){
         Payload p = new Payload();
-        p.setPayloadType(isConnected? PayloadType.CONNECT:PayloadType.DISCONNECT);
+        p.setPayloadType(isConnected?PayloadType.CONNECT:PayloadType.DISCONNECT);
         p.setClientName(who);
         p.setMessage(isConnected?"connected":"disconnected");
         return send(p);
@@ -131,7 +125,6 @@ public class ServerThread extends Thread {
     }
 
     void processMessage(Payload p) {
-        //Random random = new Random();
         switch (p.getPayloadType()) {
             case CONNECT:
                 setClientName(p.getClientName());
@@ -146,37 +139,18 @@ public class ServerThread extends Thread {
                     Room.joinRoom("lobby", this);
                 }
                 break;
-            /* 
-            case ROLL:
-                int x = 3;
-                int result = random.nextInt(x);
-                String rollMessage = "The result of the roll is: " + result;
-                String Name_R =getClientName();
-                rollMessage = Name_R + "did chose a roll and " + rollMessage;
-                currentRoom.sendMessage(this , rollMessage);
-                break;
-
-            case FLIP:
-                // Random random = new Random();
-                int resultFlip = random.nextInt(2);
-                String messageFlip = "";
-                if (resultFlip == 0) {
-                messageFlip = "The result of the coin flip is heads.";
-                } else {
-                messageFlip = "The result of the coin flip is tails.";
-                }
-                String Name_F =getClientName();
-                messageFlip = Name_F + "did chose a flip and " + messageFlip;
-                currentRoom.sendMessage(this, messageFlip);
-                break;
-                */
-                
+                    if (currentRoom != null) {
+                        currentRoom.sendMessage(this, p.getMessage());
+                    } 
+                    else {
+                        Room.joinRoom("lobby", this);
+                    } //rn364
             default:
                 break;
+
         }
 
     }
-
 
     private void cleanup() {
         info("Thread cleanup() start");
