@@ -1,12 +1,9 @@
-package Project.Server;
+package Module5.Part5;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-
-import Project.Common.Payload;
-import Project.Common.PayloadType;
 
 /**
  * A server-side representation of a single client
@@ -21,10 +18,11 @@ public class ServerThread extends Thread {
     private Room currentRoom;
     private String choice = "";
 
-    public String getChoice(){
+    public String getChoice() {
         return choice;
     }
-    public void setChoice(String choice){
+
+    public void setChoice(String choice) {
         this.choice = choice;
     }
 
@@ -80,7 +78,7 @@ public class ServerThread extends Thread {
     }
     public boolean sendConnectionStatus(String who, boolean isConnected){
         Payload p = new Payload();
-        p.setPayloadType(isConnected?PayloadType.CONNECT:PayloadType.DISCONNECT);
+        p.setPayloadType(isConnected? PayloadType.CONNECT:PayloadType.DISCONNECT);
         p.setClientName(who);
         p.setMessage(isConnected?"connected":"disconnected");
         return send(p);
@@ -133,6 +131,7 @@ public class ServerThread extends Thread {
     }
 
     void processMessage(Payload p) {
+        //Random random = new Random();
         switch (p.getPayloadType()) {
             case CONNECT:
                 setClientName(p.getClientName());
@@ -147,7 +146,7 @@ public class ServerThread extends Thread {
                     Room.joinRoom("lobby", this);
                 }
                 break;
-                /* 
+            /* 
             case ROLL:
                 int x = 3;
                 int result = random.nextInt(x);
@@ -171,12 +170,13 @@ public class ServerThread extends Thread {
                 currentRoom.sendMessage(this, messageFlip);
                 break;
                 */
+                
             default:
                 break;
-
         }
 
     }
+
 
     private void cleanup() {
         info("Thread cleanup() start");

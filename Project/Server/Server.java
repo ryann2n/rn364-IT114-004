@@ -1,4 +1,4 @@
-package Project.Server;
+package Module5.Part5;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -6,7 +6,6 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 
 public class Server {
     int port = 3001;

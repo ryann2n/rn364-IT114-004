@@ -1,4 +1,4 @@
-package Project.Client;
+package Module5.Part5;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -6,9 +6,6 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
-
-import Project.Common.Payload;
-import Project.Common.PayloadType;
 
 public class Client {
 
@@ -100,6 +97,12 @@ public class Client {
         }
         return false;
     }
+    /* 
+    private boolean isGameCommand(text) {
+        if (text.startsWith(prefix:"Rock"))
+    }
+    */
+    
 
     /**
      * Controller for handling various text commands.
@@ -232,7 +235,6 @@ public class Client {
                         p.getMessage()));
                 break;
 
-                
             default:
                 break;
 

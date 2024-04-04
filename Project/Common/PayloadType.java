@@ -1,6 +1,5 @@
-package Project.Common;
+package Module5.Part5;
 
-public enum PayloadType
-{
-    CONNECT, DISCONNECT, MESSAGE, ROLL, FLIP, DISPLAY
+public enum PayloadType {
+    CONNECT, DISCONNECT, MESSAGE,ROLL,FLIP,DISPLAY
 }
