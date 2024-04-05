@@ -115,13 +115,13 @@ public class Room implements AutoCloseable{
 						Room.joinRoom(roomName, client);
 						break;
 					
-					case ROLL: //roll command             UCID:awh9 Date:12/10/2022
+					case ROLL: //this is to roll
 						// Random random = new Random();
 						int x = 3;
 						int result = random.nextInt(x);
 						
 						String rollMessage = gettingClientName(client) + " chose a roll and the result of the roll is: " + result;
-						
+
 						sendMessage(null, rollMessage); //send message to all clients
 						break;
 
@@ -130,24 +130,24 @@ public class Room implements AutoCloseable{
 						int resultFlip = random.nextInt(2);
 						String messageFlip = "";
 						if (resultFlip == 0) {
-						messageFlip = gettingClientName(client) + " chose a coin flip and the result of the coin flip is heads.";
+						messageFlip = gettingClientName(client) + " choose a coin flip and the result is heads.";
 						} else {
-						messageFlip = gettingClientName(client) + " chose a coin flip and the result of the coin flip is tails.";
+						messageFlip = gettingClientName(client) + " choose a coin flip and the result is tails.";
 						}
 						sendMessage(null, messageFlip); //send message to all clients
 						break;
 					
 					case DISPLAY: //display command, changes font and color of text
 						String first_text = processTextDisplayChange(comm2[1]);
-						String second_text = gettingClientName(client) + " chose to change the display of the text and got" + first_text;
+						String second_text = gettingClientName(client) + " choose whether to change the display of the text and got" + first_text;
 						sendMessage(null, second_text);
 						break;
 							
 					case DISCONNECT:
 					case LOGOUT:
 					case LOGOFF:
-						Room.disconnectClient(client, this);
-						break;
+							Room.disconnectClient(client, this);
+							break;
 					default:
 						wasCommand = false;
 						break;
