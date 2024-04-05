@@ -7,9 +7,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
-import Project.Common.Payload;
-import Project.Common.PayloadType;
-
 public class Client {
 
     Socket server = null;
@@ -100,6 +97,12 @@ public class Client {
         }
         return false;
     }
+    /* 
+    private boolean isGameCommand(text) {
+        if (text.startsWith(prefix:"Rock"))
+    }
+    */
+    
 
     /**
      * Controller for handling various text commands.
@@ -231,6 +234,7 @@ public class Client {
                         p.getClientName(),
                         p.getMessage()));
                 break;
+
             default:
                 break;
 
