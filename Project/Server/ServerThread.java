@@ -19,6 +19,9 @@ public class ServerThread extends Thread {
     // private Server server;// ref to our server so we can call methods on it
     // more easily
     private Room currentRoom;
+    private String choice = ""; //adding a choice for the player
+
+    public 
 
     private void info(String message) {
         System.out.println(String.format("Thread[%s]: %s", getId(), message));

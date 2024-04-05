@@ -1,4 +1,5 @@
 package Project.Server;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -120,7 +121,7 @@ public class Room implements AutoCloseable{
 						int result = random.nextInt(x);
 						
 						String rollMessage = gettingClientName(client) + " chose a roll and the result of the roll is: " + result;
-						
+
 						sendMessage(null, rollMessage); //send message to all clients
 						break;
 
@@ -145,8 +146,8 @@ public class Room implements AutoCloseable{
 					case DISCONNECT:
 					case LOGOUT:
 					case LOGOFF:
-						Room.disconnectClient(client, this);
-						break;
+							Room.disconnectClient(client, this);
+							break;
 					default:
 						wasCommand = false;
 						break;
