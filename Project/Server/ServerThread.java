@@ -6,14 +6,17 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.Random;
 
 import Project.Common.ConnectionPayload;
 import Project.Common.Constants;
 import Project.Common.Payload;
 import Project.Common.PayloadType;
+import Project.Common.RollPayload;
 import Project.Common.RoomResultsPayload;
 import Project.Common.TextFX;
 import Project.Common.TextFX.Color;
+import Project.Server.ServerThread;
 
 /**
  * A server-side representation of a single client
@@ -24,7 +27,7 @@ public class ServerThread extends Thread {
     private boolean isRunning = false;
     private long clientId = Constants.DEFAULT_CLIENT_ID;
     private ObjectOutputStream out;// exposed here for send()
-    // private Server server;// ref to our server so we can call methods on it
+    private Server server;// ref to our server so we can call methods on it
     // more easily
     private Room currentRoom;
     private Logger logger = Logger.getLogger(ServerThread.class.getName());
@@ -32,12 +35,11 @@ public class ServerThread extends Thread {
     private void info(String message) {
         logger.info(String.format("Thread[%s]: %s", getClientName(), message));
     }
-
     public ServerThread(Socket myClient/* , Room room */) {
         info("Thread created");
         // get communication channels to single client
         this.client = myClient;
-        // this.currentRoom = room;
+        //this.currentRoom = room;
 
     }
 
@@ -223,6 +225,13 @@ public class ServerThread extends Thread {
             case JOIN_ROOM:
                 Room.joinRoom(p.getMessage(), this);
                 break;
+            case ROLL:
+                RollPayload roller = (RollPayload) p;
+                currentRoom.rollDice(roller.getDice(),roller.getSides());
+                break;
+            case FLIP: //rn364
+                currentRoom.flipCoin();
+                break;
             case LIST_ROOMS:
                 String searchString = p.getMessage() == null ? "" : p.getMessage();
                 int limit = 10;
@@ -235,22 +244,7 @@ public class ServerThread extends Thread {
                 List<String> potentialRooms = Room.listRooms(searchString, limit);
                 this.sendListRooms(potentialRooms);
                 break;
-            case ROLL: // UCID rn364
-                int x = 3;
-                int result = random.nextInt(x);
-                
-                String rollMessage = gettingClientName(client) + " chose to roll a die. The result is: " + result;
-                
-                sendMessage(null, rollMessage); 
-                break;
-            
-            case FLIP: // UCID rn364
-                int resultFlip = random.nextInt(2); 
-                String messageFlip = gettingClientName(client) + " chose to flip a coin. The result is: ";
-                messageFlip += (resultFlip == 0) ? "Heads" : "Tails";
-                
-                sendMessage(null, messageFlip); 
-                break;
+
             default:
                 break;
 
@@ -271,4 +265,6 @@ public class ServerThread extends Thread {
     public long getClientId() {
         return clientId;
     }
+// adding roll and flip methods
+
 }

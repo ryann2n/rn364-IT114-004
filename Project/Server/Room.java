@@ -4,23 +4,31 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.Random;
 
 import Project.Common.Constants;
+import Project.Common.Payload; //rn364
+import Project.Server.ServerThread; //rn364
+
 
 public class Room implements AutoCloseable {
-    // protected static Server server;// used to refer to accessible server
+    protected static Server server;// used to refer to accessible server
     // functions
     private String name;
+    private Payload p;
     private List<ServerThread> clients = new ArrayList<ServerThread>();
 
     private boolean isRunning = false;
     // Commands
     private final static String COMMAND_TRIGGER = "/";
-    // private final static String CREATE_ROOM = "createroom";
-    // private final static String JOIN_ROOM = "joinroom";
-    // private final static String DISCONNECT = "disconnect";
-    // private final static String LOGOUT = "logout";
-    // private final static String LOGOFF = "logoff";
+    private final static String CREATE_ROOM = "createroom";
+    private final static String JOIN_ROOM = "joinroom";
+    private final static String DISCONNECT = "disconnect";
+    private final static String LOGOUT = "logout";
+    private final static String LOGOFF = "logoff"; 
+    //uncommented the commands and adding roll and flip
+    private final static String ROLL = "roll";
+    private final static String FLIP = "flip";
     private Logger logger = Logger.getLogger(Room.class.getName());
 
     public Room(String name) {
@@ -94,26 +102,28 @@ public class Room implements AutoCloseable {
                 String part1 = comm[1];
                 String[] comm2 = part1.split(" ");
                 String command = comm2[0];
-                // String roomName;
+                String roomName;
                 wasCommand = true;
                 switch (command) {
-                    /*
-                     * case CREATE_ROOM:
-                     * roomName = comm2[1];
-                     * Room.createRoom(roomName, client);
-                     * break;
-                     * case JOIN_ROOM:
-                     * roomName = comm2[1];
-                     * Room.joinRoom(roomName, client);
-                     * break;
-                     */
-                    /*
-                     * case DISCONNECT:
-                     * case LOGOUT:
-                     * case LOGOFF:
-                     * Room.disconnectClient(client, this);
-                     * break;
-                     */
+                    case CREATE_ROOM:
+                        roomName = comm2[1];
+                        Room.createRoom(roomName, client);
+                        break;
+                    case JOIN_ROOM:
+                       roomName = comm2[1];
+                       Room.joinRoom(roomName, client);
+                       break;
+                    //case ROLL: //rn364
+                      // rollDice();
+                       //break;
+                    case FLIP: //rn364
+                       flipCoin();
+                       break;
+                    case DISCONNECT:
+                    case LOGOUT:
+                    case LOGOFF:
+                        Room.disconnectClient(client, this);
+                        break;
                     default:
                         wasCommand = false;
                         break;
@@ -138,7 +148,6 @@ public class Room implements AutoCloseable {
     }
     protected static void createRoom(String roomName, ServerThread client) {
         if (Server.INSTANCE.createNewRoom(roomName)) {
-            // server.joinRoom(roomName, client);
             Room.joinRoom(roomName, client);
         } else {
             client.sendMessage(Constants.DEFAULT_CLIENT_ID, String.format("Room %s already exists", roomName));
@@ -154,27 +163,6 @@ public class Room implements AutoCloseable {
     protected static List<String> listRooms(String searchString, int limit) {
         return Server.INSTANCE.listRooms(searchString, limit);
     }
-
-	protected static void roll() { //UCID rn364
-        if (currentRoom != null) {
-            int x = 3;
-            int result = (int) (Math.random() * x) + 1; 
-            String rollMessage = getClientName() + " chose to roll a die. The result is: " + result;
-            currentRoom.sendMessage(this, rollMessage); 
-        } else {
-        }
-    }
-
-    protected static void flip() {
-        if (currentRoom != null) {
-            int resultFlip = (int) (Math.random() * 2); 
-            String messageFlip = getClientName() + " chose to flip a coin. The result is: ";
-            messageFlip += (resultFlip == 0) ? "Heads" : "Tails";
-            currentRoom.sendMessage(this, messageFlip); 
-        } else {
-        }
-    }
-}
 
     protected static void disconnectClient(ServerThread client, Room room) {
         client.setCurrentRoom(null);
@@ -238,4 +226,22 @@ public class Room implements AutoCloseable {
         isRunning = false;
         clients = null;
     }
-}
+    public void flipCoin()
+    {
+        Random random = new Random();
+        String result = random.nextBoolean() ? "Heads" : "Tails";
+        server.broadcast("coinflip is: " + result);
+    }
+    public void rollDice(int dice, int sides) {
+        Random random = new Random();
+        int result, total = 0;
+        for (int i = 0; i < dice; i++){
+        result = random.nextInt(sides) + 1;
+        total = total + result;
+        }
+        String finMessage = "Dice roll result is " + total;
+        sendMessage(null, finMessage);
+    }
+        
+        
+    }

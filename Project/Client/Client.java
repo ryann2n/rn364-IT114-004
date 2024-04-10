@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Random;
 
 import java.util.List;
 import java.util.Scanner;
@@ -18,6 +19,7 @@ import Project.Common.PayloadType;
 import Project.Common.RoomResultsPayload;
 import Project.Common.TextFX;
 import Project.Common.TextFX.Color;
+import Project.Common.RollPayload;
 
 public enum Client {
     INSTANCE;
@@ -37,13 +39,13 @@ public enum Client {
     private static final String LIST_ROOMS = "/listrooms";
     private static final String LIST_USERS = "/users";
     private static final String DISCONNECT = "/disconnect";
+    private static final String ROLL = "/roll"; // trig commands rn364
+    private static final String FLIP = "/flip"; // trig commands rn364
 
     // client id, is the key, client name is the value
     private ConcurrentHashMap<Long, String> clientsInRoom = new ConcurrentHashMap<Long, String>();
     private long myClientId = Constants.DEFAULT_CLIENT_ID;
     private Logger logger = Logger.getLogger(Client.class.getName());
-
-
 
     public boolean isConnected() {
         if (server == null) {
@@ -179,6 +181,40 @@ public enum Client {
                 logger.info(String.format("%s - %s", t, u));
             }));
             return true;
+        } 
+        else if (text.startsWith(ROLL)) {
+            String roll = text.replace(ROLL, "").trim();
+            String[] rollParts = roll.split("d");
+            if (rollParts.length >= 2) {
+                try {
+                    int lower = Integer.parseInt(rollParts[0]);
+                    int upper = Integer.parseInt(rollParts[1]);
+                    sendRoll(lower, upper);
+                } catch (IOException e) {
+                    System.out.println(TextFX.colorize("Socket error", Color.RED));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            else {
+               try { 
+                    int lower = 1;
+                    int upper = Integer.parseInt(rollParts[0]);
+                    sendRoll(lower, upper);
+                } 
+                catch (IOException e) {
+                    System.out.println(TextFX.colorize("Socket error", Color.RED));
+                } 
+            catch (Exception e) {
+                e.printStackTrace();
+                }
+            }
+        }
+        else if (text.equalsIgnoreCase(FLIP)) {
+            {
+                sendFlip();
+            } 
+            return false;
         }
         else if (text.equalsIgnoreCase(DISCONNECT)) {
             try {
@@ -187,7 +223,6 @@ public enum Client {
             catch(Exception e){
               e.printStackTrace(); 
             }
-            return true;
         }
         return false;
     }
@@ -198,6 +233,7 @@ public enum Client {
         cp.setPayloadType(PayloadType.DISCONNECT);
         out.writeObject(cp);
     }
+
     private void sendCreateRoom(String roomName) throws IOException {
         Payload p = new Payload();
         p.setPayloadType(PayloadType.CREATE_ROOM);
@@ -236,7 +272,23 @@ public enum Client {
         // p.setClientName(clientName);
         out.writeObject(p);
     }
+    public void sendRoll(int dice, int sides) throws IOException {
+        RollPayload rp = new RollPayload(dice, sides);
+        out.writeObject(rp);
+    }
 
+    private void sendFlip()
+    {   
+        Payload f = new Payload();
+        f.setPayloadType(PayloadType.FLIP);
+        try {
+            out.writeObject(f);
+        } catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+        }
+        
+    }
     // end send methods
     private void listenForKeyboard() {
         inputThread = new Thread() {
@@ -329,6 +381,7 @@ public enum Client {
         }
         return "[name not found]";
     }
+
     /**
      * Used to process payloads from the server-side and handle their data
      * 
@@ -390,21 +443,6 @@ public enum Client {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                break;
-            case ROLL: // UCID rn364
-                RollPayload rp = (RollPayload) p;
-                String rollMessage = TextFX.colorize(String.format("%s rolled a die. The result is: %d",
-                        getClientNameFromId(rp.getClientId()),
-                        rp.getResult()), Color.MAGENTA);
-                logger.info(rollMessage);
-                break;
-            
-            case FLIP: // UCID rn364
-                FlipPayload fp = (FlipPayload) p;
-                String flipMessage = TextFX.colorize(String.format("%s flipped a coin. The result is: %s",
-                        getClientNameFromId(fp.getClientId()),
-                        fp.getResult()), Color.MAGENTA);
-                logger.info(flipMessage);
                 break;
             default:
                 break;
@@ -468,5 +506,5 @@ public enum Client {
             e.printStackTrace();
         }
     }
-
+    
 }
