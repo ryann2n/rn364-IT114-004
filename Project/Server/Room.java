@@ -230,7 +230,7 @@ public class Room implements AutoCloseable {
     {
         Random random = new Random();
         String result = random.nextBoolean() ? "Heads" : "Tails";
-        server.broadcast("coinflip is: " + result);
+        sendMessage(null, "coinflip is: " + result);
     }
     public void rollDice(int dice, int sides) {
         Random random = new Random();

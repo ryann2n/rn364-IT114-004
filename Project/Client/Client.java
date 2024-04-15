@@ -42,6 +42,7 @@ public enum Client {
     private static final String ROLL = "/roll"; // trig commands rn364
     private static final String FLIP = "/flip"; // trig commands rn364
 
+    private static final
     // client id, is the key, client name is the value
     private ConcurrentHashMap<Long, String> clientsInRoom = new ConcurrentHashMap<Long, String>();
     private long myClientId = Constants.DEFAULT_CLIENT_ID;

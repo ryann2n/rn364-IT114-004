@@ -1,4 +1,3 @@
-./Hello.java
 ./Module4/OOP/Encapsulation.java
 ./Module4/OOP/Inheritance.java
 ./Module4/Part1/Client.java
@@ -20,8 +19,12 @@
 ./Problem2.java
 ./Problem3.java
 ./Project/Client/Client.java
+./Project/Common/ConnectionPayload.java
+./Project/Common/Constants.java
 ./Project/Common/Payload.java
 ./Project/Common/PayloadType.java
+./Project/Common/RollPayload.java
+./Project/Common/RoomResultsPayload.java
 ./Project/Common/TextFX.java
 ./Project/Server/Room.java
 ./Project/Server/Server.java
