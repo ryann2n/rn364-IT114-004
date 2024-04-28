@@ -11,7 +11,8 @@ import Project.Common.Payload; //rn364
 import Project.Server.ServerThread; //rn364
 
 
-public class Room implements AutoCloseable {
+public class Room implements AutoCloseable 
+{
     protected static Server server;// used to refer to accessible server
     // functions
     private String name;
@@ -26,9 +27,15 @@ public class Room implements AutoCloseable {
     private final static String DISCONNECT = "disconnect";
     private final static String LOGOUT = "logout";
     private final static String LOGOFF = "logoff"; 
-    //uncommented the commands and adding roll and flip
+    //uncommented the commands and adding roll and flip rn364
     private final static String ROLL = "roll";
     private final static String FLIP = "flip";
+    private final static String BOLD = "bold";
+    private final static String ITALIC = "italic";
+    private final static String UNDERLINE = "underline";
+    private final static String COLOR = "color";
+    private final static String TEXT = "text";
+
     private Logger logger = Logger.getLogger(Room.class.getName());
 
     public Room(String name) {
@@ -130,23 +137,28 @@ public class Room implements AutoCloseable {
                 }
 
             }
-        } catch (Exception e) {
+        } catch (Exception e) 
+        {
             e.printStackTrace();
         }
         return wasCommand;
     }
 
     // Command helper methods
-    private synchronized void syncClientList(ServerThread joiner) {
+    private synchronized void syncClientList(ServerThread joiner) 
+    {
         Iterator<ServerThread> iter = clients.iterator();
-        while (iter.hasNext()) {
+        while (iter.hasNext()) 
+        {
             ServerThread st = iter.next();
-            if (st.getClientId() != joiner.getClientId()) {
+            if (st.getClientId() != joiner.getClientId()) 
+            {
                 joiner.sendClientMapping(st.getClientId(), st.getClientName());
             }
         }
     }
-    protected static void createRoom(String roomName, ServerThread client) {
+    protected static void createRoom(String roomName, ServerThread client)
+    {
         if (Server.INSTANCE.createNewRoom(roomName)) {
             Room.joinRoom(roomName, client);
         } else {
@@ -154,17 +166,20 @@ public class Room implements AutoCloseable {
         }
     }
 
-    protected static void joinRoom(String roomName, ServerThread client) {
+    protected static void joinRoom(String roomName, ServerThread client) 
+    {
         if (!Server.INSTANCE.joinRoom(roomName, client)) {
             client.sendMessage(Constants.DEFAULT_CLIENT_ID, String.format("Room %s doesn't exist", roomName));
         }
     }
 
-    protected static List<String> listRooms(String searchString, int limit) {
+    protected static List<String> listRooms(String searchString, int limit) 
+    {
         return Server.INSTANCE.listRooms(searchString, limit);
     }
 
-    protected static void disconnectClient(ServerThread client, Room room) {
+    protected static void disconnectClient(ServerThread client, Room room) 
+    {
         client.setCurrentRoom(null);
         client.disconnect();
         room.removeClient(client);
@@ -179,31 +194,79 @@ public class Room implements AutoCloseable {
      * @param sender  The client sending the message
      * @param message The message to broadcast inside the room
      */
-    protected synchronized void sendMessage(ServerThread sender, String message) {
-        if (!isRunning) {
-            return;
-        }
-        info("Sending message to " + clients.size() + " clients");
-        if (sender != null && processCommands(message, sender)) {
-            // it was a command, don't broadcast
-            return;
-        }
-
+        protected synchronized void sendMessage(ServerThread sender, String message) 
+        {
+            if (!isRunning)
+                return;
+    
+            // Moved inside the method
+            info(String.format("Sending message to " + clients.size() + " clients"));
+    
+            if (sender != null && processCommands(message, sender)) 
+            {
+                // it was a command, don't broadcast
+                return;
+            }
+        
         /// String from = (sender == null ? "Room" : sender.getClientName());
         long from = (sender == null) ? Constants.DEFAULT_CLIENT_ID : sender.getClientId();
         Iterator<ServerThread> iter = clients.iterator();
+        message = applyFormatting(message);
         while (iter.hasNext()) {
             ServerThread client = iter.next();
+            //boolean messageSent = false;
             boolean messageSent = client.sendMessage(from, message);
             if (!messageSent) {
                 handleDisconnect(iter, client);
+            }
+        }
+        
+        if (sender != null && message.startsWith("@"))
+        {
+            int spaceIndex = message.indexOf(" ");
+            if (spaceIndex != -1) 
+            {
+                String recipientName = message.substring(1, spaceIndex);
+                String privateMessage = message.substring(spaceIndex + 1);
+
+                boolean recipientFound = false;
+                for (ServerThread client : clients) 
+                {
+                    if (client.getClientName().equals(recipientName)) 
+                    {
+                        client.sendMessage(sender.getClientId(), "(Private Message): " + privateMessage);
+                        recipientFound = true;
+                        break;
+                    }
+                }
+
+                if (!recipientFound) {
+                    sender.sendMessage(sender.getClientId(), "Recipient not found: " + recipientName);
+                }
+            } else {
+                sender.sendMessage(sender.getClientId(),
+                        "Invalid private message format. Usage: @[recipient] [message]");
+            }
+        } else 
+        {
+            // Regular broadcast message
+            while (iter.hasNext()) 
+            {
+                ServerThread client = iter.next();
+                boolean messageSent = client
+                        .sendMessage(sender == null ? Constants.DEFAULT_CLIENT_ID : sender.getClientId(), message);
+                if (!messageSent) 
+                {
+                    handleDisconnect(iter, client);
+                }
             }
         }
     }
 
     protected synchronized void sendConnectionStatus(ServerThread sender, boolean isConnected) {
         Iterator<ServerThread> iter = clients.iterator();
-        while (iter.hasNext()) {
+        while (iter.hasNext()) 
+        {
             ServerThread client = iter.next();
             boolean messageSent = client.sendConnectionStatus(sender.getClientId(), sender.getClientName(),
                     isConnected);
@@ -218,6 +281,40 @@ public class Room implements AutoCloseable {
         info("Removed client " + client.getClientName());
         checkClients();
         sendMessage(null, client.getClientName() + " disconnected");
+    }
+    private String applyFormatting(String message)
+    {
+        if ((message.contains(".*")) && message.contains("*."))
+        {
+            message = message.replace(".*","<b>");//rn364 BOLD
+            message = message.replace("*.", "</b>");
+        }
+        if ((message.contains(".|")) && message.contains("|."))
+        {
+            message = message.replace(".|","<i>");//rn364 ITALICS
+            message = message.replace("|.", "</i>");
+        }
+        if ((message.contains("._")) && message.contains("_."))
+        {
+            message = message.replace("._","<u>"); //rn364 UNDERLINE
+            message = message.replace("_.", "</u>");
+        }
+        if ((message.contains("R[")) && message.contains("]R"))
+        {
+            message = message.replace("R[","<font> color = RED");//rn364
+            message = message.replace("]R", "</font>");
+        }
+        if ((message.contains("G[")) && message.contains("]G"))
+        {
+            message = message.replace("G[","<font> color = GREEN");//rn364
+            message = message.replace("]G", "</font>");
+        }
+        if ((message.contains("B[")) && message.contains("]B"))
+        {
+            message = message.replace("B[","<font> color = BLUE");//rn364
+            message = message.replace("]B", "</font>");
+        }
+        return message;
     }
 
     public void close() {
@@ -242,6 +339,6 @@ public class Room implements AutoCloseable {
         String finMessage = "Dice roll result is " + total;
         sendMessage(null, finMessage);
     }
-        
-        
-    }
+   
+}
+

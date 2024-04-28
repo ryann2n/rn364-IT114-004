@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Random;
 
@@ -141,6 +142,7 @@ public class ServerThread extends Thread {
         p.setClientId(whoId);
         p.setClientName(whoName);
         p.setMessage(isConnected ? "connected" : "disconnected");
+        p.setMessage(String.format("%s the room %s",(isConnected ? "Joined" : "Left"), currentRoom.getName()));
         return send(p);
     }
 
@@ -216,6 +218,7 @@ public class ServerThread extends Thread {
                     currentRoom.sendMessage(this, p.getMessage());
                 } else {
                     // TODO migrate to lobby
+                    logger.log(Level.INFO, "Migrating to lobby on message with null room");
                     Room.joinRoom(Constants.LOBBY, this);
                 }
                 break;

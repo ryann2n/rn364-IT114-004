@@ -1,0 +1,5 @@
+{
+    "debug.javascript.breakOnConditionalError": true,
+    "java.help.collectErrorLog": true,
+    "C_Cpp.errorSquiggles": "enabled"
+}

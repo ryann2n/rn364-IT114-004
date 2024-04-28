@@ -41,8 +41,7 @@ public enum Client {
     private static final String DISCONNECT = "/disconnect";
     private static final String ROLL = "/roll"; // trig commands rn364
     private static final String FLIP = "/flip"; // trig commands rn364
-
-    private static final
+    
     // client id, is the key, client name is the value
     private ConcurrentHashMap<Long, String> clientsInRoom = new ConcurrentHashMap<Long, String>();
     private long myClientId = Constants.DEFAULT_CLIENT_ID;
@@ -267,8 +266,10 @@ public enum Client {
 
     private void sendMessage(String message) throws IOException {
         Payload p = new Payload();
+        //message = applyFormatting(message);
         p.setPayloadType(PayloadType.MESSAGE);
         p.setMessage(message);
+        
         // no need to send an identifier, because the server knows who we are
         // p.setClientName(clientName);
         out.writeObject(p);
@@ -290,6 +291,40 @@ public enum Client {
         }
         
     }
+    /*private String applyFormatting(String message)
+    {
+        if ((message.contains(".*")) && message.contains("*."))
+        {
+            message = message.replace(".*","<b>");//rn364 BOLD
+            message = message.replace("*.", "</b>");
+        }
+        if ((message.contains(".|")) && message.contains("|."))
+        {
+            message = message.replace(".|","<i>");//rn364 ITALICS
+            message = message.replace("|.", "</i>");
+        }
+        if ((message.contains("._")) && message.contains("_."))
+        {
+            message = message.replace("._","<u>"); //rn364 UNDERLINE
+            message = message.replace("_.", "</u>");
+        }
+        if ((message.contains("R[")) && message.contains("]R"))
+        {
+            message = message.replace("R[","<font> color = RED");//rn364
+            message = message.replace("]R", "</font>");
+        }
+        if ((message.contains("G[")) && message.contains("]G"))
+        {
+            message = message.replace("G[","<font> color = GREEN");//rn364
+            message = message.replace("]G", "</font>");
+        }
+        if ((message.contains("B[")) && message.contains("]B"))
+        {
+            message = message.replace("B[","<font> color = BLUE");//rn364
+            message = message.replace("]B", "</font>");
+        }
+        return message;
+    }*/
     // end send methods
     private void listenForKeyboard() {
         inputThread = new Thread() {
