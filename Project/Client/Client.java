@@ -5,12 +5,24 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Scanner;
+import java.util.Random;
 
+import java.util.List;
+import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
+
+import Project.Common.ConnectionPayload;
+import Project.Common.Constants;
 import Project.Common.Payload;
 import Project.Common.PayloadType;
+import Project.Common.RoomResultsPayload;
+import Project.Common.TextFX;
+import Project.Common.TextFX.Color;
+import Project.Common.RollPayload;
 
-public class Client {
+public enum Client {
+    INSTANCE;
 
     Socket server = null;
     ObjectOutputStream out = null;
@@ -22,9 +34,18 @@ public class Client {
     private Thread fromServerThread;
     private String clientName = "";
 
-    public Client() {
-        System.out.println("");
-    }
+    private static final String CREATE_ROOM = "/createroom";
+    private static final String JOIN_ROOM = "/joinroom";
+    private static final String LIST_ROOMS = "/listrooms";
+    private static final String LIST_USERS = "/users";
+    private static final String DISCONNECT = "/disconnect";
+    private static final String ROLL = "/roll"; // trig commands rn364
+    private static final String FLIP = "/flip"; // trig commands rn364
+    
+    // client id, is the key, client name is the value
+    private ConcurrentHashMap<Long, String> clientsInRoom = new ConcurrentHashMap<Long, String>();
+    private long myClientId = Constants.DEFAULT_CLIENT_ID;
+    private Logger logger = Logger.getLogger(Client.class.getName());
 
     public boolean isConnected() {
         if (server == null) {
@@ -52,7 +73,7 @@ public class Client {
             out = new ObjectOutputStream(server.getOutputStream());
             // channel to listen to server
             in = new ObjectInputStream(server.getInputStream());
-            System.out.println("Client connected");
+            logger.info("Client connected");
             listenForServerMessage();
             sendConnect();
         } catch (UnknownHostException e) {
@@ -94,7 +115,7 @@ public class Client {
             String[] parts = text.split(" ");
             if (parts.length >= 2) {
                 clientName = parts[1].trim();
-                System.out.println("Name set to " + clientName);
+                logger.info("Name set to " + clientName);
             }
             return true;
         }
@@ -110,10 +131,10 @@ public class Client {
      * @param text
      * @return true if a text was a command or triggered a command
      */
-    private boolean processCommand(String text) {
+    private boolean processClientCommand(String text) {
         if (isConnection(text)) {
             if (clientName.isBlank()) {
-                System.out.println("You must set your name before you can connect via: /name your_name");
+                logger.warning("You must set your name before you can connect via: /name your_name");
                 return true;
             }
             // replaces multiple spaces with single space
@@ -127,55 +148,212 @@ public class Client {
             return true;
         } else if (isName(text)) {
             return true;
+        } else if (text.startsWith(CREATE_ROOM)) {
+
+            try {
+                String roomName = text.replace(CREATE_ROOM, "").trim();
+                sendCreateRoom(roomName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return true;
+        } else if (text.startsWith(JOIN_ROOM)) {
+
+            try {
+                String roomName = text.replace(JOIN_ROOM, "").trim();
+                sendJoinRoom(roomName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return true;
+        } else if (text.startsWith(LIST_ROOMS)) {
+
+            try {
+                String searchQuery = text.replace(LIST_ROOMS, "").trim();
+                sendListRooms(searchQuery);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return true;
+        } else if (text.equalsIgnoreCase(LIST_USERS)) {
+            logger.info("Users in Room: ");
+            clientsInRoom.forEach(((t, u) -> {
+                logger.info(String.format("%s - %s", t, u));
+            }));
+            return true;
+        } 
+        else if (text.startsWith(ROLL)) {
+            String roll = text.replace(ROLL, "").trim();
+            String[] rollParts = roll.split("d");
+            if (rollParts.length >= 2) {
+                try {
+                    int lower = Integer.parseInt(rollParts[0]);
+                    int upper = Integer.parseInt(rollParts[1]);
+                    sendRoll(lower, upper);
+                } catch (IOException e) {
+                    System.out.println(TextFX.colorize("Socket error", Color.RED));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            else {
+               try { 
+                    int lower = 1;
+                    int upper = Integer.parseInt(rollParts[0]);
+                    sendRoll(lower, upper);
+                } 
+                catch (IOException e) {
+                    System.out.println(TextFX.colorize("Socket error", Color.RED));
+                } 
+            catch (Exception e) {
+                e.printStackTrace();
+                }
+            }
+        }
+        else if (text.equalsIgnoreCase(FLIP)) {
+            {
+                sendFlip();
+            } 
+            return false;
+        }
+        else if (text.equalsIgnoreCase(DISCONNECT)) {
+            try {
+                sendDisconnect();
+            }
+            catch(Exception e){
+              e.printStackTrace(); 
+            }
         }
         return false;
     }
 
     // Send methods
-    private void sendConnect() throws IOException {
+    private void sendDisconnect() throws IOException {
+        ConnectionPayload cp = new ConnectionPayload();
+        cp.setPayloadType(PayloadType.DISCONNECT);
+        out.writeObject(cp);
+    }
+
+    private void sendCreateRoom(String roomName) throws IOException {
         Payload p = new Payload();
-        p.setPayloadType(PayloadType.CONNECT);
+        p.setPayloadType(PayloadType.CREATE_ROOM);
+        p.setMessage(roomName);
+        out.writeObject(p);
+    }
+
+    private void sendJoinRoom(String roomName) throws IOException {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.JOIN_ROOM);
+        p.setMessage(roomName);
+        out.writeObject(p);
+    }
+
+    private void sendListRooms(String searchString) throws IOException {
+        // Updated after video to use RoomResultsPayload so we can (later) use a limit
+        // value
+        RoomResultsPayload p = new RoomResultsPayload();
+        p.setMessage(searchString);
+        p.setLimit(10);
+        out.writeObject(p);
+    }
+
+    private void sendConnect() throws IOException {
+        ConnectionPayload p = new ConnectionPayload(true);
+
         p.setClientName(clientName);
         out.writeObject(p);
     }
 
     private void sendMessage(String message) throws IOException {
         Payload p = new Payload();
+        //message = applyFormatting(message);
         p.setPayloadType(PayloadType.MESSAGE);
         p.setMessage(message);
-        p.setClientName(clientName);
+        
+        // no need to send an identifier, because the server knows who we are
+        // p.setClientName(clientName);
         out.writeObject(p);
     }
+    public void sendRoll(int dice, int sides) throws IOException {
+        RollPayload rp = new RollPayload(dice, sides);
+        out.writeObject(rp);
+    }
 
+    private void sendFlip()
+    {   
+        Payload f = new Payload();
+        f.setPayloadType(PayloadType.FLIP);
+        try {
+            out.writeObject(f);
+        } catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+        }
+        
+    }
+    /*private String applyFormatting(String message)
+    {
+        if ((message.contains(".*")) && message.contains("*."))
+        {
+            message = message.replace(".*","<b>");//rn364 BOLD
+            message = message.replace("*.", "</b>");
+        }
+        if ((message.contains(".|")) && message.contains("|."))
+        {
+            message = message.replace(".|","<i>");//rn364 ITALICS
+            message = message.replace("|.", "</i>");
+        }
+        if ((message.contains("._")) && message.contains("_."))
+        {
+            message = message.replace("._","<u>"); //rn364 UNDERLINE
+            message = message.replace("_.", "</u>");
+        }
+        if ((message.contains("R[")) && message.contains("]R"))
+        {
+            message = message.replace("R[","<font> color = RED");//rn364
+            message = message.replace("]R", "</font>");
+        }
+        if ((message.contains("G[")) && message.contains("]G"))
+        {
+            message = message.replace("G[","<font> color = GREEN");//rn364
+            message = message.replace("]G", "</font>");
+        }
+        if ((message.contains("B[")) && message.contains("]B"))
+        {
+            message = message.replace("B[","<font> color = BLUE");//rn364
+            message = message.replace("]B", "</font>");
+        }
+        return message;
+    }*/
     // end send methods
     private void listenForKeyboard() {
         inputThread = new Thread() {
             @Override
             public void run() {
-                System.out.println("Listening for input");
+                logger.info("Listening for input");
                 try (Scanner si = new Scanner(System.in);) {
                     String line = "";
                     isRunning = true;
                     while (isRunning) {
                         try {
-                            System.out.println("Waiting for input");
+                            logger.info("Waiting for input");
                             line = si.nextLine();
-                            if (!processCommand(line)) {
+                            if (!processClientCommand(line)) {
                                 if (isConnected()) {
                                     if (line != null && line.trim().length() > 0) {
                                         sendMessage(line);
                                     }
 
                                 } else {
-                                    System.out.println("Not connected to server");
+                                    logger.warning("Not connected to server");
                                 }
                             }
                         } catch (Exception e) {
-                            System.out.println("Connection dropped");
+                            logger.severe("Connection dropped");
                             break;
                         }
                     }
-                    System.out.println("Exited loop");
+                    logger.info("Exited loop");
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
@@ -197,39 +375,110 @@ public class Client {
                     while (!server.isClosed() && !server.isInputShutdown()
                             && (fromServer = (Payload) in.readObject()) != null) {
 
-                        System.out.println("Debug Info: " + fromServer);
-                        processMessage(fromServer);
+                        logger.info("Debug Info: " + fromServer);
+                        processPayload(fromServer);
 
                     }
-                    System.out.println("Loop exited");
+                    logger.info("Loop exited");
                 } catch (Exception e) {
                     e.printStackTrace();
                     if (!server.isClosed()) {
-                        System.out.println("Server closed connection");
+                        logger.severe("Server closed connection");
                     } else {
-                        System.out.println("Connection closed");
+                        logger.severe("Connection closed");
                     }
                 } finally {
                     close();
-                    System.out.println("Stopped listening to server input");
+                    logger.info("Stopped listening to server input");
                 }
             }
         };
         fromServerThread.start();// start the thread
     }
 
-    private void processMessage(Payload p) {
+    private void addClientReference(long id, String name) {
+        if (!clientsInRoom.containsKey(id)) {
+            clientsInRoom.put(id, name);
+        }
+    }
+
+    private void removeClientReference(long id) {
+        if (clientsInRoom.containsKey(id)) {
+            clientsInRoom.remove(id);
+        }
+    }
+
+    private String getClientNameFromId(long id) {
+        if (clientsInRoom.containsKey(id)) {
+            return clientsInRoom.get(id);
+        }
+        if (id == Constants.DEFAULT_CLIENT_ID) {
+            return "[Room]";
+        }
+        return "[name not found]";
+    }
+
+    /**
+     * Used to process payloads from the server-side and handle their data
+     * 
+     * @param p
+     */
+    private void processPayload(Payload p) {
+        String message;
         switch (p.getPayloadType()) {
+            case CLIENT_ID:
+                if (myClientId == Constants.DEFAULT_CLIENT_ID) {
+                    myClientId = p.getClientId();
+                    addClientReference(myClientId, ((ConnectionPayload) p).getClientName());
+                    logger.info(TextFX.colorize("My Client Id is " + myClientId, Color.GREEN));
+                } else {
+                    logger.info(TextFX.colorize("Setting client id to default", Color.RED));
+                }
+                break;
             case CONNECT:// for now connect,disconnect are all the same
             case DISCONNECT:
-                System.out.println(String.format("*%s %s*",
-                        p.getClientName(),
-                        p.getMessage()));
+                ConnectionPayload cp = (ConnectionPayload) p;
+                message = TextFX.colorize(String.format("*%s %s*",
+                        cp.getClientName(),
+                        cp.getMessage()), Color.YELLOW);
+                logger.info(message);
+            case SYNC_CLIENT:
+                ConnectionPayload cp2 = (ConnectionPayload) p;
+                if (cp2.getPayloadType() == PayloadType.CONNECT || cp2.getPayloadType() == PayloadType.SYNC_CLIENT) {
+                    addClientReference(cp2.getClientId(), cp2.getClientName());
+                } else if (cp2.getPayloadType() == PayloadType.DISCONNECT) {
+                    removeClientReference(cp2.getClientId());
+                }
+
+                break;
+            case JOIN_ROOM:
+                clientsInRoom.clear();// we changed a room so likely need to clear the list
                 break;
             case MESSAGE:
-                System.out.println(String.format("%s: %s",
-                        p.getClientName(),
-                        p.getMessage()));
+
+                message = TextFX.colorize(String.format("%s: %s",
+                        getClientNameFromId(p.getClientId()),
+                        p.getMessage()), Color.BLUE);
+                System.out.println(message);
+                break;
+            case LIST_ROOMS:
+                try {
+                    RoomResultsPayload rp = (RoomResultsPayload) p;
+                    // if there's a message, print it
+                    if (rp.getMessage() != null && !rp.getMessage().isBlank()) {
+                        message = TextFX.colorize(rp.getMessage(), Color.RED);
+                        logger.info(message);
+                    }
+                    // print room names found
+                    List<String> rooms = rp.getRooms();
+                    System.out.println(TextFX.colorize("Room Results", Color.CYAN));
+                    for (int i = 0; i < rooms.size(); i++) {
+                        String msg = String.format("%s %s", (i + 1), rooms.get(i));
+                        System.out.println(TextFX.colorize(msg, Color.CYAN));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 break;
             default:
                 break;
@@ -242,47 +491,49 @@ public class Client {
     }
 
     private void close() {
+        myClientId = Constants.DEFAULT_CLIENT_ID;
+        clientsInRoom.clear();
         try {
             inputThread.interrupt();
         } catch (Exception e) {
-            System.out.println("Error interrupting input");
+            logger.severe("Error interrupting input");
             e.printStackTrace();
         }
         try {
             fromServerThread.interrupt();
         } catch (Exception e) {
-            System.out.println("Error interrupting listener");
+            logger.severe("Error interrupting listener");
             e.printStackTrace();
         }
         try {
-            System.out.println("Closing output stream");
+            logger.info("Closing output stream");
             out.close();
         } catch (NullPointerException ne) {
-            System.out.println("Server was never opened so this exception is ok");
+            logger.severe("Server was never opened so this exception is ok");
         } catch (Exception e) {
             e.printStackTrace();
         }
         try {
-            System.out.println("Closing input stream");
+            logger.info("Closing input stream");
             in.close();
         } catch (NullPointerException ne) {
-            System.out.println("Server was never opened so this exception is ok");
+            logger.severe("Server was never opened so this exception is ok");
         } catch (Exception e) {
             e.printStackTrace();
         }
         try {
-            System.out.println("Closing connection");
+            logger.info("Closing connection");
             server.close();
-            System.out.println("Closed socket");
+            logger.severe("Closed socket");
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NullPointerException ne) {
-            System.out.println("Server was never opened so this exception is ok");
+            logger.warning("Server was never opened so this exception is ok");
         }
     }
 
     public static void main(String[] args) {
-        Client client = new Client();
+        Client client = Client.INSTANCE; // new Client();
 
         try {
             // if start is private, it's valid here since this main is part of the class
@@ -291,5 +542,5 @@ public class Client {
             e.printStackTrace();
         }
     }
-
+    
 }

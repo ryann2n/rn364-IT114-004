@@ -4,9 +4,20 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.Random;
 
+import Project.Common.ConnectionPayload;
+import Project.Common.Constants;
 import Project.Common.Payload;
 import Project.Common.PayloadType;
+import Project.Common.RollPayload;
+import Project.Common.RoomResultsPayload;
+import Project.Common.TextFX;
+import Project.Common.TextFX.Color;
+import Project.Server.ServerThread;
 
 /**
  * A server-side representation of a single client
@@ -15,26 +26,38 @@ public class ServerThread extends Thread {
     private Socket client;
     private String clientName;
     private boolean isRunning = false;
+    private long clientId = Constants.DEFAULT_CLIENT_ID;
     private ObjectOutputStream out;// exposed here for send()
-    // private Server server;// ref to our server so we can call methods on it
+    private Server server;// ref to our server so we can call methods on it
     // more easily
     private Room currentRoom;
+    private Logger logger = Logger.getLogger(ServerThread.class.getName());
 
     private void info(String message) {
-        System.out.println(String.format("Thread[%s]: %s", getId(), message));
+        logger.info(String.format("Thread[%s]: %s", getClientName(), message));
     }
-
-    public ServerThread(Socket myClient, Room room) {
+    public ServerThread(Socket myClient/* , Room room */) {
         info("Thread created");
         // get communication channels to single client
         this.client = myClient;
-        this.currentRoom = room;
+        //this.currentRoom = room;
 
     }
 
+    protected void setClientId(long id) {
+        clientId = id;
+        if (id == Constants.DEFAULT_CLIENT_ID) {
+            logger.info(TextFX.colorize("Client id reset", Color.WHITE));
+        }
+        sendClientId(id);
+    }
+
+    protected boolean isRunning() {
+        return isRunning;
+    }
     protected void setClientName(String name) {
         if (name == null || name.isBlank()) {
-            System.err.println("Invalid client name being set");
+            logger.severe("Invalid client name being set");
             return;
         }
         clientName = name;
@@ -63,18 +86,63 @@ public class ServerThread extends Thread {
     }
 
     // send methods
-    public boolean sendMessage(String from, String message) {
+    protected boolean sendClientMapping(long id, String name) {
+        ConnectionPayload cp = new ConnectionPayload();
+        cp.setPayloadType(PayloadType.SYNC_CLIENT);
+        cp.setClientId(id);
+        cp.setClientName(name);
+        return send(cp);
+    }
+
+    protected boolean sendJoinRoom(String roomName) {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.JOIN_ROOM);
+        p.setMessage(roomName);
+        return send(p);
+    }
+
+    protected boolean sendClientId(long id) {
+        ConnectionPayload cp = new ConnectionPayload();
+        cp.setClientId(id);
+        cp.setClientName(clientName);
+        return send(cp);
+    }
+    private boolean sendListRooms(List<String> potentialRooms) {
+        RoomResultsPayload rp = new RoomResultsPayload();
+        rp.setRooms(potentialRooms);
+        if (potentialRooms == null) {
+            rp.setMessage("Invalid limit, please choose a value between 1-100");
+        } else if (potentialRooms.size() == 0) {
+            rp.setMessage("No rooms found matching your search criteria");
+        }
+        return send(rp);
+    }
+
+    public boolean sendMessage(long from, String message) {
         Payload p = new Payload();
         p.setPayloadType(PayloadType.MESSAGE);
-        p.setClientName(from);
+        // p.setClientName(from);
+        p.setClientId(from);
         p.setMessage(message);
         return send(p);
     }
-    public boolean sendConnectionStatus(String who, boolean isConnected){
-        Payload p = new Payload();
-        p.setPayloadType(isConnected?PayloadType.CONNECT:PayloadType.DISCONNECT);
-        p.setClientName(who);
-        p.setMessage(isConnected?"connected":"disconnected");
+
+    /**
+     * Used to associate client names and their ids from the server perspective
+     * 
+     * @param whoId       id of who is connecting/disconnecting
+     * @param whoName     name of who is connecting/disconnecting
+     * @param isConnected status of connection (true connecting, false,
+     *                    disconnecting)
+     * @return
+     */
+    public boolean sendConnectionStatus(long whoId, String whoName, boolean isConnected) {
+        ConnectionPayload p = new ConnectionPayload(isConnected);
+        // p.setClientName(who);
+        p.setClientId(whoId);
+        p.setClientName(whoName);
+        p.setMessage(isConnected ? "connected" : "disconnected");
+        p.setMessage(String.format("%s the room %s",(isConnected ? "Joined" : "Left"), currentRoom.getName()));
         return send(p);
     }
 
@@ -110,7 +178,7 @@ public class ServerThread extends Thread {
             ) {
 
                 info("Received from client: " + fromClient);
-                processMessage(fromClient);
+                processPayload(fromClient);
 
             } // close while loop
         } catch (Exception e) {
@@ -124,21 +192,62 @@ public class ServerThread extends Thread {
         }
     }
 
-    void processMessage(Payload p) {
+    /**
+     * Used to process payloads from the client and handle their data
+     * 
+     * @param p
+     */
+    private void processPayload(Payload p) {
         switch (p.getPayloadType()) {
             case CONNECT:
-                setClientName(p.getClientName());
+                try {
+                    ConnectionPayload cp = (ConnectionPayload) p;
+                    setClientName(cp.getClientName());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
                 break;
-            case DISCONNECT://TBD
+            case DISCONNECT:
+                if (currentRoom != null) {
+                    Room.disconnectClient(this, currentRoom);
+                }
                 break;
             case MESSAGE:
                 if (currentRoom != null) {
                     currentRoom.sendMessage(this, p.getMessage());
                 } else {
                     // TODO migrate to lobby
-                    Room.joinRoom("lobby", this);
+                    logger.log(Level.INFO, "Migrating to lobby on message with null room");
+                    Room.joinRoom(Constants.LOBBY, this);
                 }
                 break;
+            case CREATE_ROOM:
+                Room.createRoom(p.getMessage(), this);
+                break;
+            case JOIN_ROOM:
+                Room.joinRoom(p.getMessage(), this);
+                break;
+            case ROLL:
+                RollPayload roller = (RollPayload) p;
+                currentRoom.rollDice(roller.getDice(),roller.getSides());
+                break;
+            case FLIP: //rn364
+                currentRoom.flipCoin();
+                break;
+            case LIST_ROOMS:
+                String searchString = p.getMessage() == null ? "" : p.getMessage();
+                int limit = 10;
+                try {
+                    RoomResultsPayload rp = ((RoomResultsPayload) p);
+                    limit = rp.getLimit();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                List<String> potentialRooms = Room.listRooms(searchString, limit);
+                this.sendListRooms(potentialRooms);
+                break;
+
             default:
                 break;
 
@@ -155,4 +264,10 @@ public class ServerThread extends Thread {
         }
         info("Thread cleanup() complete");
     }
+
+    public long getClientId() {
+        return clientId;
+    }
+// adding roll and flip methods
+
 }
