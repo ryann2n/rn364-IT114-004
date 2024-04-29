@@ -282,7 +282,7 @@ public class Room implements AutoCloseable
         checkClients();
         sendMessage(null, client.getClientName() + " disconnected");
     }
-    private String applyFormatting(String message)
+    private String applyFormatting(String message)//rn364
     {
         if ((message.contains(".*")) && message.contains("*."))
         {
