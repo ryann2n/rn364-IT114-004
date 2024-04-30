@@ -46,11 +46,15 @@ public enum Client {
     private ConcurrentHashMap<Long, String> clientsInRoom = new ConcurrentHashMap<Long, String>();
     private long myClientId = Constants.DEFAULT_CLIENT_ID;
     private Logger logger = Logger.getLogger(Client.class.getName());
+    
 
-     private static List<IClientEvents> events = new ArrayList<IClientEvents>();
+    private static List<IClientEvents> events = new ArrayList<IClientEvents>();
 
     public void addCallback(IClientEvents e) {
         events.add(e);
+    }
+    public long getMyId(){
+        return myClientId;
     }
 
     public boolean isConnected() {
@@ -277,6 +281,14 @@ public enum Client {
     }
 
     public void sendMessage(String message) throws IOException {
+        if (message.startsWith("/") && processClientCommand(message)) {
+            return;
+        }
+        else if (message.startsWith("@")) {
+            // do pm logic
+            return;
+        }
+        System.out.println(TextFX.colorize("Client is sending message: " + message, Color.YELLOW));
         Payload p = new Payload();
         //message = applyFormatting(message);
         p.setPayloadType(PayloadType.MESSAGE);
@@ -443,9 +455,12 @@ public enum Client {
                     myClientId = p.getClientId();
                     addClientReference(myClientId, ((ConnectionPayload) p).getClientName());
                     logger.info(TextFX.colorize("My Client Id is " + myClientId, Color.GREEN));
+
                 } else {
                     logger.info(TextFX.colorize("Setting client id to default", Color.RED));
                 }
+                events.forEach(event -> event.onReceiveClientId(myClientId));
+
                 break;
             case CONNECT:// for now connect,disconnect are all the same
             case DISCONNECT:
@@ -464,8 +479,15 @@ public enum Client {
 
                 break;
             case JOIN_ROOM:
-                clientsInRoom.clear();// we changed a room so likely need to clear the list
-                break;
+            clientsInRoom.clear();// we changed a room so likely need to clear the list
+            // events.onResetUserList();
+            events.forEach(e -> {
+                e.onResetUserList();
+            });
+            events.forEach(e -> {
+                e.onRoomJoin(p.getMessage());
+            });
+            break;
             case MESSAGE:
 
                 message = TextFX.colorize(String.format("%s: %s",
@@ -474,7 +496,7 @@ public enum Client {
                 System.out.println(message);
                 break;
             case RESET_USER_LIST:
-                events.onResetUserList();
+                events.forEach(event -> event.onResetUserList());
                 break;
             case LIST_ROOMS:
                 try {
@@ -491,6 +513,9 @@ public enum Client {
                         String msg = String.format("%s %s", (i + 1), rooms.get(i));
                         System.out.println(TextFX.colorize(msg, Color.CYAN));
                     }
+                    events.forEach(e -> {
+                        e.onReceiveRoomList(rp.getRooms(), rp.getMessage());
+                    });
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

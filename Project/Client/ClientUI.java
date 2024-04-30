@@ -33,6 +33,7 @@ public class ClientUI extends JFrame implements IClientEvents, ICardControls {
     private static Logger logger = Logger.getLogger(ClientUI.class.getName());
     private JPanel currentCardPanel = null;
     private CardView currentCard = CardView.CONNECT;
+    
 
     private Hashtable<Long, String> userList = new Hashtable<Long, String>();
 
