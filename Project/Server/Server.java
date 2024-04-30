@@ -120,6 +120,7 @@ public enum Server {
             if (oldRoom != null) {
                 logger.info(client.getName() + " leaving room " + oldRoom.getName());
                 oldRoom.removeClient(client);
+                client.sendResetUserList();
             }
             logger.info(client.getName() + " joining room " + newRoom.getName());
             newRoom.addClient(client);

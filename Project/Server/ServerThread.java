@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -107,6 +108,11 @@ public class ServerThread extends Thread {
         cp.setClientName(clientName);
         return send(cp);
     }
+    public boolean sendResetUserList() {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.RESET_USER_LIST);
+        return send(p);
+    }
     private boolean sendListRooms(List<String> potentialRooms) {
         RoomResultsPayload rp = new RoomResultsPayload();
         rp.setRooms(potentialRooms);
@@ -191,6 +197,27 @@ public class ServerThread extends Thread {
             cleanup();
         }
     }
+    ArrayList <String> mutedList = new ArrayList<String>(); // Create an ArrayList type String
+
+    public void muteClient (String userName) { //Function to mute a client
+        if (!mutedList.contains(userName)) {
+            mutedList.add(userName);
+        }
+        }
+    
+    public void  unmuteClient ( String userName) { //wik3 12/10/23
+        if (mutedList.contains(userName)) {
+            mutedList.remove(userName);
+        } 
+    }
+
+    public boolean checkingMutedList (String userName) { //wik3 12/10/23
+        if (mutedList.contains(userName)) {  // Check if the user is in the muted list and return true if they are and false if they are not
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     /**
      * Used to process payloads from the client and handle their data
@@ -247,6 +274,14 @@ public class ServerThread extends Thread {
                 List<String> potentialRooms = Room.listRooms(searchString, limit);
                 this.sendListRooms(potentialRooms);
                 break;
+            case MUTE: // TODO rn364
+                muteClient(clientName);
+                break;
+            case UNMUTE: // TODO rn364
+                unmuteClient(clientName);
+                break;
+
+            
 
             default:
                 break;
