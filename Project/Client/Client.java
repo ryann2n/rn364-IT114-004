@@ -5,34 +5,47 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Random;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
+//import Project.Common.BoolyPayload;
+//import Project.Common.Cell;
+//import Project.Common.CellData;
 import Project.Common.ConnectionPayload;
 import Project.Common.Constants;
+//import Project.Common.Grid;
+//import Project.Common.PathChoicesPayload;
 import Project.Common.Payload;
 import Project.Common.PayloadType;
+import Project.Common.RollPayload;
+//import Project.Common.Phase;
+//import Project.Common.PointsPayload;
+//import Project.Common.PositionPayload;
+//import Project.Common.ReadyPayload;
 import Project.Common.RoomResultsPayload;
 import Project.Common.TextFX;
+//import Project.Common.TimePayload;
+//import Project.Common.TurnStatusPayload;
 import Project.Common.TextFX.Color;
-import Project.Common.RollPayload;
 
 public enum Client {
     INSTANCE;
 
-    Socket server = null;
-    ObjectOutputStream out = null;
-    ObjectInputStream in = null;
+    private Socket server = null;
+    private ObjectOutputStream out = null;
+    private ObjectInputStream in = null;
     final String ipAddressPattern = "/connect\\s+(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{3,5})";
     final String localhostPattern = "/connect\\s+(localhost:\\d{3,5})";
-    boolean isRunning = false;
+    private boolean isRunning = false;
     private Thread inputThread;
     private Thread fromServerThread;
     private String clientName = "";
+
+    
 
     private static final String CREATE_ROOM = "/createroom";
     private static final String JOIN_ROOM = "/joinroom";
@@ -43,7 +56,7 @@ public enum Client {
     private static final String FLIP = "/flip"; // trig commands rn364
     
     // client id, is the key, client name is the value
-    private ConcurrentHashMap<Long, String> clientsInRoom = new ConcurrentHashMap<Long, String>();
+    private ConcurrentHashMap<Long, ClientPlayer> clientsInRoom = new ConcurrentHashMap<Long, ClientPlayer>();
     private long myClientId = Constants.DEFAULT_CLIENT_ID;
     private Logger logger = Logger.getLogger(Client.class.getName());
     
@@ -422,7 +435,10 @@ public enum Client {
 
     private void addClientReference(long id, String name) {
         if (!clientsInRoom.containsKey(id)) {
-            clientsInRoom.put(id, name);
+            ClientPlayer cp = new ClientPlayer();
+            cp.setClientId(id);
+            cp.setClientName(name);
+            clientsInRoom.put(id, cp);
         }
     }
 
@@ -432,9 +448,9 @@ public enum Client {
         }
     }
 
-    private String getClientNameFromId(long id) {
+    protected String getClientNameFromId(long id) {
         if (clientsInRoom.containsKey(id)) {
-            return clientsInRoom.get(id);
+            return clientsInRoom.get(id).getClientName();
         }
         if (id == Constants.DEFAULT_CLIENT_ID) {
             return "[Room]";
@@ -489,11 +505,14 @@ public enum Client {
             });
             break;
             case MESSAGE:
-
+            
                 message = TextFX.colorize(String.format("%s: %s",
                         getClientNameFromId(p.getClientId()),
                         p.getMessage()), Color.BLUE);
                 System.out.println(message);
+                events.forEach(e -> {
+                    e.onMessageReceive(p.getClientId(), p.getMessage());
+                });
                 break;
             case RESET_USER_LIST:
                 events.forEach(event -> event.onResetUserList());

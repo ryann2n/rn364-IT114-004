@@ -212,7 +212,7 @@ public class ClientUI extends JFrame implements IClientEvents, ICardControls {
     @Override
     public void onMessageReceive(long clientId, String message) {
         if (currentCard.ordinal() >= CardView.CHAT.ordinal()) {
-            String clientName = mapClientId(clientId);
+            String clientName = Client.INSTANCE.getClientNameFromId(clientId);
             chatPanel.addText(String.format("%s: %s", clientName, message));
         }
     }

@@ -1,5 +1,6 @@
 ./Client/CardView.java
 ./Client/Client.java
+./Client/ClientPlayer.java
 ./Client/ClientUI.java
 ./Client/ClientUtils.java
 ./Client/ICardControls.java
