@@ -205,13 +205,13 @@ public class ServerThread extends Thread {
         }
         }
     
-    public void  unmuteClient ( String userName) { //wik3 12/10/23
+    public void  unmuteClient ( String userName) { ////rn364
         if (mutedList.contains(userName)) {
             mutedList.remove(userName);
         } 
     }
 
-    public boolean checkingMutedList (String userName) { //wik3 12/10/23
+    public boolean checkingMutedList (String userName) { ////rn364
         if (mutedList.contains(userName)) {  // Check if the user is in the muted list and return true if they are and false if they are not
             return true;
         } else {

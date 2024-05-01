@@ -99,7 +99,7 @@ public class ChatPanel extends JPanel {
         this.setName(CardView.CHAT.name());
         // don't need to add this to ClientUI as this isn't a primary panel anymore
         // (it's nested in ChatGamePanel)
-        // controls.addPanel(Card.CHAT.name(), this);
+        controls.addPanel(CardView.CHAT.name(), this);
         chatArea.addContainerListener(new ContainerListener() {
 
             @Override
@@ -137,7 +137,7 @@ public class ChatPanel extends JPanel {
     public void addText(String text) {
         JPanel content = chatArea;
         // add message
-        JEditorPane textContainer = new JEditorPane("text/plain", text);
+        JEditorPane textContainer = new JEditorPane("text/html", text);
 
         // sizes the panel to attempt to take up the width of the container
         // and expand in height based on word wrapping
