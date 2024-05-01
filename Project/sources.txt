@@ -1,4 +1,16 @@
+./Client/CardView.java
 ./Client/Client.java
+./Client/ClientUI.java
+./Client/ClientUtils.java
+./Client/ICardControls.java
+./Client/IClientEvents.java
+./Client/Views/ChatPanel.java
+./Client/Views/ConnectionPanel.java
+./Client/Views/Menu.java
+./Client/Views/RoomListItem.java
+./Client/Views/RoomsPanel.java
+./Client/Views/UserDetailsPanel.java
+./Client/Views/UserListPanel.java
 ./Common/ConnectionPayload.java
 ./Common/Constants.java
 ./Common/Payload.java

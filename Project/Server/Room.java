@@ -35,6 +35,10 @@ public class Room implements AutoCloseable
     private final static String UNDERLINE = "underline";
     private final static String COLOR = "color";
     private final static String TEXT = "text";
+    private final static String PRIVATE = "@"; //person can input private command
+	private final static String MUTE = "mute"; //person can input mute command
+	private final static String UNMUTE = "unmute"; //person can input unmute command
+
 
     private Logger logger = Logger.getLogger(Room.class.getName());
 
@@ -126,6 +130,14 @@ public class Room implements AutoCloseable
                     case FLIP: //rn364
                        flipCoin();
                        break;
+                    case UNMUTE: //unmute command, unmutes a specific client
+                            comm2[1] = comm2[1].toLowerCase();
+                client.unmuteClient(comm2[1]);
+                       break; 
+                    case MUTE: //mute command, mutes a specific client
+                            comm2[1] = comm2[1].toLowerCase();
+                client.muteClient(comm2[1]);
+                   break;
                     case DISCONNECT:
                     case LOGOUT:
                     case LOGOFF:
@@ -214,6 +226,9 @@ public class Room implements AutoCloseable
         message = applyFormatting(message);
         while (iter.hasNext()) {
             ServerThread client = iter.next();
+            if (sender!= null && client.checkingMutedList(sender.getClientName())) {
+                continue;
+            }
             //boolean messageSent = false;
             boolean messageSent = client.sendMessage(from, message);
             if (!messageSent) {
@@ -221,7 +236,7 @@ public class Room implements AutoCloseable
             }
         }
         
-        if (sender != null && message.startsWith("@"))
+        if (sender != null && message.startsWith("@"))//rn364
         {
             int spaceIndex = message.indexOf(" ");
             if (spaceIndex != -1) 

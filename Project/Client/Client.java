@@ -6,7 +6,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Random;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +46,16 @@ public enum Client {
     private ConcurrentHashMap<Long, String> clientsInRoom = new ConcurrentHashMap<Long, String>();
     private long myClientId = Constants.DEFAULT_CLIENT_ID;
     private Logger logger = Logger.getLogger(Client.class.getName());
+    
+
+    private static List<IClientEvents> events = new ArrayList<IClientEvents>();
+
+    public void addCallback(IClientEvents e) {
+        events.add(e);
+    }
+    public long getMyId(){
+        return myClientId;
+    }
 
     public boolean isConnected() {
         if (server == null) {
@@ -64,9 +74,12 @@ public enum Client {
      * 
      * @param address
      * @param port
+     * @param callback
      * @return true if connection was successful
      */
-    private boolean connect(String address, int port) {
+    public boolean connect(String address, int port, String username, IClientEvents callback) {
+        clientName = username;
+        addCallback(callback);
         try {
             server = new Socket(address, port);
             // channel to send to server
@@ -132,6 +145,7 @@ public enum Client {
      * @return true if a text was a command or triggered a command
      */
     private boolean processClientCommand(String text) {
+        /*
         if (isConnection(text)) {
             if (clientName.isBlank()) {
                 logger.warning("You must set your name before you can connect via: /name your_name");
@@ -143,7 +157,9 @@ public enum Client {
             String[] parts = text.trim().replaceAll(" +", " ").split(" ")[1].split(":");
             connect(parts[0].trim(), Integer.parseInt(parts[1].trim()));
             return true;
-        } else if (isQuit(text)) {
+            
+        } else*/
+         if (isQuit(text)) {
             isRunning = false;
             return true;
         } else if (isName(text)) {
@@ -228,27 +244,27 @@ public enum Client {
     }
 
     // Send methods
-    private void sendDisconnect() throws IOException {
+    public void sendDisconnect() throws IOException {
         ConnectionPayload cp = new ConnectionPayload();
         cp.setPayloadType(PayloadType.DISCONNECT);
         out.writeObject(cp);
     }
 
-    private void sendCreateRoom(String roomName) throws IOException {
+    public void sendCreateRoom(String roomName) throws IOException {
         Payload p = new Payload();
         p.setPayloadType(PayloadType.CREATE_ROOM);
         p.setMessage(roomName);
         out.writeObject(p);
     }
 
-    private void sendJoinRoom(String roomName) throws IOException {
+    public void sendJoinRoom(String roomName) throws IOException {
         Payload p = new Payload();
         p.setPayloadType(PayloadType.JOIN_ROOM);
         p.setMessage(roomName);
         out.writeObject(p);
     }
 
-    private void sendListRooms(String searchString) throws IOException {
+    public void sendListRooms(String searchString) throws IOException {
         // Updated after video to use RoomResultsPayload so we can (later) use a limit
         // value
         RoomResultsPayload p = new RoomResultsPayload();
@@ -264,7 +280,15 @@ public enum Client {
         out.writeObject(p);
     }
 
-    private void sendMessage(String message) throws IOException {
+    public void sendMessage(String message) throws IOException {
+        if (message.startsWith("/") && processClientCommand(message)) {
+            return;
+        }
+        else if (message.startsWith("@")) {
+            // do pm logic
+            return;
+        }
+        System.out.println(TextFX.colorize("Client is sending message: " + message, Color.YELLOW));
         Payload p = new Payload();
         //message = applyFormatting(message);
         p.setPayloadType(PayloadType.MESSAGE);
@@ -431,9 +455,12 @@ public enum Client {
                     myClientId = p.getClientId();
                     addClientReference(myClientId, ((ConnectionPayload) p).getClientName());
                     logger.info(TextFX.colorize("My Client Id is " + myClientId, Color.GREEN));
+
                 } else {
                     logger.info(TextFX.colorize("Setting client id to default", Color.RED));
                 }
+                events.forEach(event -> event.onReceiveClientId(myClientId));
+
                 break;
             case CONNECT:// for now connect,disconnect are all the same
             case DISCONNECT:
@@ -452,14 +479,24 @@ public enum Client {
 
                 break;
             case JOIN_ROOM:
-                clientsInRoom.clear();// we changed a room so likely need to clear the list
-                break;
+            clientsInRoom.clear();// we changed a room so likely need to clear the list
+            // events.onResetUserList();
+            events.forEach(e -> {
+                e.onResetUserList();
+            });
+            events.forEach(e -> {
+                e.onRoomJoin(p.getMessage());
+            });
+            break;
             case MESSAGE:
 
                 message = TextFX.colorize(String.format("%s: %s",
                         getClientNameFromId(p.getClientId()),
                         p.getMessage()), Color.BLUE);
                 System.out.println(message);
+                break;
+            case RESET_USER_LIST:
+                events.forEach(event -> event.onResetUserList());
                 break;
             case LIST_ROOMS:
                 try {
@@ -476,6 +513,9 @@ public enum Client {
                         String msg = String.format("%s %s", (i + 1), rooms.get(i));
                         System.out.println(TextFX.colorize(msg, Color.CYAN));
                     }
+                    events.forEach(e -> {
+                        e.onReceiveRoomList(rp.getRooms(), rp.getMessage());
+                    });
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
